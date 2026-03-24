@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Excel Trainer 📊</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1a0f;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #14532d, #166534);
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid #15803d;
+    }
+    header h1 { font-size: 1.6rem; font-weight: 700; }
+    header p { font-size: 0.9rem; color: #86efac; margin-top: 4px; }
+    .icon { font-size: 2rem; }
+
+    .progress-bar { height: 3px; background: #14532d; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #16a34a, #4ade80); transition: width 0.4s ease; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      height: calc(100vh - 91px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: #0a140a;
+      border-right: 1px solid #14532d;
+      overflow-y: auto;
+      padding: 16px 0;
+    }
+    .sidebar-title {
+      font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: #16a34a; padding: 0 16px 12px;
+    }
+    .exercise-item {
+      padding: 12px 16px; cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: all 0.2s;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .exercise-item:hover { background: #0f1f0f; border-left-color: #16a34a; }
+    .exercise-item.active { background: #14532d; border-left-color: #22c55e; }
+    .ex-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; flex-shrink: 0;
+      background: #14532d; color: #22c55e; border: 1px solid #166534;
+    }
+    .exercise-item.done .ex-icon { background: #1e3a5f; color: #60a5fa; border-color: #1e40af; }
+    .exercise-item.active .ex-icon { background: #16a34a; color: white; border-color: #22c55e; }
+    .ex-info { flex: 1; min-width: 0; }
+    .ex-name { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ex-level { font-size: 0.7rem; color: #64748b; margin-top: 2px; }
+    .level-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 999px; font-weight: 600; }
+    .badge-debutant { background: #14532d; color: #86efac; }
+    .badge-intermediaire { background: #1e3a5f; color: #93c5fd; }
+    .badge-avance { background: #4c1d95; color: #c4b5fd; }
+    .badge-expert { background: #7f1d1d; color: #fca5a5; }
+
+    /* Main */
+    .main { display: flex; flex-direction: column; overflow: hidden; }
+
+    .exercise-header {
+      padding: 18px 28px;
+      background: #0a140a;
+      border-bottom: 1px solid #14532d;
+      flex-shrink: 0;
+    }
+    .exercise-header h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; }
+    .exercise-header p { font-size: 0.88rem; color: #94a3b8; line-height: 1.6; white-space: pre-line; }
+
+    .hint-box {
+      margin-top: 10px; padding: 10px 14px;
+      background: #14532d; border-left: 3px solid #22c55e;
+      border-radius: 4px; font-size: 0.82rem; color: #86efac; display: none;
+    }
+
+    /* Spreadsheet */
+    .spreadsheet-zone {
+      padding: 16px 28px;
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+    .spreadsheet-label {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #475569; margin-bottom: 8px;
+    }
+    .spreadsheet {
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      font-family: 'Segoe UI', sans-serif;
+      background: #0d1f0d;
+      border-radius: 6px;
+      overflow: hidden;
+      min-width: 400px;
+    }
+    .spreadsheet th {
+      background: #14532d;
+      color: #86efac;
+      padding: 5px 14px;
+      font-weight: 600;
+      border: 1px solid #166534;
+      text-align: center;
+      min-width: 80px;
+    }
+    .spreadsheet td {
+      padding: 5px 14px;
+      border: 1px solid #14532d;
+      color: #e2e8f0;
+      text-align: right;
+      min-width: 80px;
+    }
+    .spreadsheet td.label-col { text-align: left; color: #94a3b8; }
+    .spreadsheet td.row-num {
+      background: #14532d; color: #86efac;
+      font-weight: 600; text-align: center;
+      padding: 5px 10px; min-width: 36px;
+    }
+    .spreadsheet td.highlight { background: #1a3a1a; color: #4ade80; font-weight: 600; }
+    .spreadsheet td.target { background: #1e3a1e; border: 2px solid #22c55e; color: #86efac; font-style: italic; }
+
+    /* Answer zone */
+    .answer-zone {
+      padding: 14px 28px;
+      background: #0a140a;
+      border-top: 1px solid #14532d;
+      flex-shrink: 0;
+    }
+    .answer-label {
+      font-size: 0.78rem; color: #64748b; margin-bottom: 8px; font-weight: 600;
+    }
+    .formula-input-row { display: flex; align-items: center; gap: 10px; }
+    .formula-prefix {
+      background: #14532d; color: #86efac;
+      padding: 9px 12px; border-radius: 6px 0 0 6px;
+      font-family: monospace; font-size: 0.95rem; font-weight: 700;
+      border: 1px solid #166534; border-right: none;
+      flex-shrink: 0;
+    }
+    #formula-input {
+      flex: 1; padding: 9px 14px;
+      background: #0d1f0d; color: #e2e8f0;
+      border: 1px solid #166534; border-left: none;
+      border-radius: 0 6px 6px 0;
+      font-family: 'Fira Code', 'Courier New', monospace;
+      font-size: 0.9rem; outline: none;
+    }
+    #formula-input:focus { border-color: #22c55e; box-shadow: 0 0 0 2px rgba(34,197,94,0.15); }
+
+    /* MCQ */
+    .mcq-zone { padding: 14px 28px; flex-shrink: 0; }
+    .mcq-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+    .mcq-btn {
+      padding: 10px 16px; background: #0d1f0d;
+      border: 1px solid #14532d; border-radius: 8px;
+      color: #e2e8f0; font-size: 0.85rem; font-family: monospace;
+      cursor: pointer; transition: all 0.2s; text-align: left;
+    }
+    .mcq-btn:hover { background: #14532d; border-color: #22c55e; }
+    .mcq-btn.selected { background: #14532d; border-color: #22c55e; color: #86efac; }
+    .mcq-btn.correct { background: #166534; border-color: #4ade80; color: #86efac; }
+    .mcq-btn.wrong { background: #7f1d1d; border-color: #f87171; color: #fca5a5; }
+
+    /* Toolbar */
+    .toolbar {
+      padding: 12px 28px; background: #080f08;
+      border-top: 1px solid #14532d;
+      display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0; margin-top: auto;
+    }
+    button { padding: 9px 18px; border-radius: 8px; border: none; font-size: 0.87rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    #btn-check { background: #166534; color: #86efac; }
+    #btn-check:hover { background: #15803d; }
+    #btn-hint { background: transparent; color: #22c55e; border: 1px solid #14532d; }
+    #btn-hint:hover { background: #14532d; }
+    #btn-reset { background: transparent; color: #475569; border: 1px solid #1e293b; margin-left: auto; }
+    #btn-reset:hover { color: #94a3b8; }
+
+    .status-msg { font-size: 0.85rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; display: none; }
+    .status-msg.ok { background: #166534; color: #86efac; display: inline-block; }
+    .status-msg.fail { background: #7f1d1d; color: #f87171; display: inline-block; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f1a0f; }
+    ::-webkit-scrollbar-thumb { background: #14532d; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="icon">📊</div>
+  <div>
+    <h1>Excel Trainer</h1>
+    <p>Maîtrise Excel de débutant à expert — formules, fonctions et astuces</p>
+  </div>
+</header>
+
+<div class="progress-bar">
+  <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+</div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <div class="main">
+    <div class="exercise-header">
+      <h2 id="ex-title">Chargement...</h2>
+      <p id="ex-description"></p>
+      <div class="hint-box" id="hint-box"></div>
+    </div>
+
+    <div class="spreadsheet-zone" id="spreadsheet-zone">
+      <div class="spreadsheet-label">📋 Données de l'exercice</div>
+      <div id="spreadsheet-container"></div>
+    </div>
+
+    <div id="input-zone"></div>
+
+    <div class="toolbar">
+      <button id="btn-check">✓ Valider</button>
+      <button id="btn-hint">💡 Indice</button>
+      <span class="status-msg" id="status-msg"></span>
+      <button id="btn-reset">↺ Réinitialiser</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const exercises = [
+
+  // ── DÉBUTANT ──────────────────────────────────────────────
+  {
+    id: 1, level: "debutant", type: "formula",
+    name: "Somme simple (SUM)",
+    description: "La colonne B contient les ventes de janvier à mai.\nQuelle formule écris-tu en B7 pour faire la somme totale de B2 à B6 ?",
+    hint: "La fonction SUM additionne une plage de cellules. Syntaxe : =SUM(début:fin)",
+    table: {
+      headers: ["", "A", "B"],
+      rows: [
+        ["1", "Mois", "Ventes (€)"],
+        ["2", "Janvier", "1 200"],
+        ["3", "Février", "980"],
+        ["4", "Mars", "1 540"],
+        ["5", "Avril", "870"],
+        ["6", "Mai", "1 100"],
+        ["7", "TOTAL", "❓"],
+      ],
+      highlight: [6],
+      target: [6, 2]
+    },
+    check: (v) => norm(v, ["=SUM(B2:B6)", "=SOMME(B2:B6)"])
+  },
+
+  {
+    id: 2, level: "debutant", type: "formula",
+    name: "Moyenne (AVERAGE)",
+    description: "La colonne B contient les notes d'un élève.\nFormule pour calculer la moyenne en B7 ?",
+    hint: "AVERAGE calcule la moyenne arithmétique d'une plage.",
+    table: {
+      headers: ["", "A", "B"],
+      rows: [
+        ["1", "Matière", "Note /20"],
+        ["2", "Maths", "14"],
+        ["3", "Français", "12"],
+        ["4", "Histoire", "16"],
+        ["5", "Anglais", "11"],
+        ["6", "Science", "18"],
+        ["7", "Moyenne", "❓"],
+      ],
+      target: [6, 2]
+    },
+    check: (v) => norm(v, ["=AVERAGE(B2:B6)", "=MOYENNE(B2:B6)"])
+  },
+
+  {
+    id: 3, level: "debutant", type: "mcq",
+    name: "Référence absolue ($)",
+    description: "Tu veux copier la formule =A1*B1 vers le bas sans que la ligne de B1 change (B1 doit rester fixe). Comment écris-tu la référence à B1 ?",
+    hint: "Le symbole $ bloque une ligne ou une colonne. $B$1 bloque les deux, B$1 bloque seulement la ligne.",
+    table: {
+      headers: ["", "A", "B"],
+      rows: [
+        ["1", "Prix", "TVA : 0.20"],
+        ["2", "100", "=A2*???"],
+        ["3", "250", "=A3*???"],
+        ["4", "80",  "=A4*???"],
+      ]
+    },
+    options: ["=A2*B1", "=A2*$B$1", "=A2*$B1", "=A2*B$1"],
+    answer: "=A2*$B$1",
+    check: (v) => v === "=A2*$B$1"
+  },
+
+  {
+    id: 4, level: "debutant", type: "formula",
+    name: "MIN et MAX",
+    description: "Trouve la valeur minimale des températures (B2:B6) en B8 et la valeur maximale en B9.\nÉcris d'abord la formule pour le MIN (en B8).",
+    hint: "MIN() retourne la plus petite valeur, MAX() retourne la plus grande.",
+    table: {
+      headers: ["", "A", "B"],
+      rows: [
+        ["1", "Jour", "Température"],
+        ["2", "Lundi", "18"],
+        ["3", "Mardi", "22"],
+        ["4", "Mercredi", "15"],
+        ["5", "Jeudi", "25"],
+        ["6", "Vendredi", "20"],
+        ["7", "", ""],
+        ["8", "Minimum", "❓"],
+        ["9", "Maximum", ""],
+      ],
+      target: [7, 2]
+    },
+    check: (v) => norm(v, ["=MIN(B2:B6)"])
+  },
+
+  // ── INTERMÉDIAIRE ─────────────────────────────────────────
+  {
+    id: 5, level: "intermediaire", type: "formula",
+    name: "Condition simple (IF)",
+    description: "Si le score en B2 est >= 10, afficher \"Reçu\", sinon \"Échoué\".\nQuelle formule en C2 ?",
+    hint: "Syntaxe IF : =IF(test, valeur_si_vrai, valeur_si_faux). Les textes doivent être entre guillemets.",
+    table: {
+      headers: ["", "A", "B", "C"],
+      rows: [
+        ["1", "Étudiant", "Score", "Résultat"],
+        ["2", "Alice", "14", "❓"],
+        ["3", "Bob", "8",  ""],
+        ["4", "Clara", "10", ""],
+      ],
+      target: [1, 3]
+    },
+    check: (v) => norm(v, ['=IF(B2>=10,"Reçu","Échoué")', '=SI(B2>=10,"Reçu","Échoué")', '=IF(B2>=10,"Recu","Echoue")'])
+  },
+
+  {
+    id: 6, level: "intermediaire", type: "formula",
+    name: "COUNTIF — Compter sous condition",
+    description: "Compte le nombre de ventes supérieures à 1000€ dans la plage B2:B7.\nFormule en B9 ?",
+    hint: "COUNTIF(plage, critère). Le critère peut être une expression entre guillemets : \">1000\"",
+    table: {
+      headers: ["", "A", "B"],
+      rows: [
+        ["1", "Vendeur", "Ventes (€)"],
+        ["2", "Marie", "1 200"],
+        ["3", "Paul", "850"],
+        ["4", "Sophie", "1 540"],
+        ["5", "Jean", "970"],
+        ["6", "Lucie", "1 100"],
+        ["7", "Marc", "760"],
+        ["8", "", ""],
+        ["9", "Nb > 1000€", "❓"],
+      ],
+      target: [8, 2]
+    },
+    check: (v) => norm(v, ['=COUNTIF(B2:B7,">1000")', '=NB.SI(B2:B7,">1000")'])
+  },
+
+  {
+    id: 7, level: "intermediaire", type: "formula",
+    name: "SUMIF — Somme conditionnelle",
+    description: "Calcule la somme des ventes uniquement pour la région \"Nord\" (colonne A) dans la plage B2:B6.\nFormule en B8 ?",
+    hint: "SUMIF(plage_critère, critère, plage_somme). Le critère texte est entre guillemets.",
+    table: {
+      headers: ["", "A", "B"],
+      rows: [
+        ["1", "Région", "Ventes (€)"],
+        ["2", "Nord", "1 200"],
+        ["3", "Sud", "980"],
+        ["4", "Nord", "1 540"],
+        ["5", "Est", "870"],
+        ["6", "Nord", "1 100"],
+        ["7", "", ""],
+        ["8", "Total Nord", "❓"],
+      ],
+      target: [7, 2]
+    },
+    check: (v) => norm(v, ['=SUMIF(A2:A6,"Nord",B2:B6)', '=SOMME.SI(A2:A6,"Nord",B2:B6)'])
+  },
+
+  {
+    id: 8, level: "intermediaire", type: "mcq",
+    name: "VLOOKUP — Recherche verticale",
+    description: "Tu veux retrouver le salaire de l'employé dont l'ID est en F2, depuis le tableau A2:C6.\nLe salaire est en colonne 3. Quelle est la bonne formule ?",
+    hint: "VLOOKUP(valeur cherchée, tableau, numéro de colonne, 0 pour correspondance exacte)",
+    table: {
+      headers: ["", "A", "B", "C", "", "E", "F"],
+      rows: [
+        ["1", "ID", "Nom", "Salaire", "", "Recherche", ""],
+        ["2", "101", "Alice", "2 800€", "", "ID :", "103"],
+        ["3", "102", "Bob", "3 200€", "", "Salaire :", "❓"],
+        ["4", "103", "Clara", "2 500€", "", "", ""],
+        ["5", "104", "David", "4 100€", "", "", ""],
+        ["6", "105", "Eva", "3 600€", "", "", ""],
+      ],
+      target: [2, 6]
+    },
+    options: [
+      '=VLOOKUP(F2,A2:C6,3,0)',
+      '=VLOOKUP(F2,A2:C6,2,0)',
+      '=VLOOKUP(F2,A:C,3,1)',
+      '=HLOOKUP(F2,A2:C6,3,0)'
+    ],
+    answer: '=VLOOKUP(F2,A2:C6,3,0)',
+    check: (v) => v === '=VLOOKUP(F2,A2:C6,3,0)'
+  },
+
+  // ── AVANCÉ ────────────────────────────────────────────────
+  {
+    id: 9, level: "avance", type: "formula",
+    name: "IF imbriqués",
+    description: "En C2, note le niveau selon le score en B2 :\n• >= 16 → \"Excellent\"\n• >= 12 → \"Bien\"\n• >= 10 → \"Passable\"\n• Sinon → \"Insuffisant\"",
+    hint: "Imbrique des IF : =IF(test1, val1, IF(test2, val2, IF(test3, val3, val4)))",
+    table: {
+      headers: ["", "A", "B", "C"],
+      rows: [
+        ["1", "Nom", "Note", "Mention"],
+        ["2", "Alice", "17", "❓"],
+        ["3", "Bob", "13", ""],
+        ["4", "Clara", "10", ""],
+        ["5", "David", "7", ""],
+      ],
+      target: [1, 3]
+    },
+    check: (v) => norm(v, [
+      '=IF(B2>=16,"Excellent",IF(B2>=12,"Bien",IF(B2>=10,"Passable","Insuffisant")))',
+      '=SI(B2>=16,"Excellent",SI(B2>=12,"Bien",SI(B2>=10,"Passable","Insuffisant")))'
+    ])
+  },
+
+  {
+    id: 10, level: "avance", type: "mcq",
+    name: "INDEX + MATCH",
+    description: "Tu veux trouver le nom du produit (colonne A) qui a le prix le plus élevé (colonne B).\nQuelle formule utiliser en D2 ?",
+    hint: "INDEX retourne une valeur à une position, MATCH retourne la position d'une valeur. Combinés, ils remplacent VLOOKUP avec plus de flexibilité.",
+    table: {
+      headers: ["", "A", "B", "", "D"],
+      rows: [
+        ["1", "Produit", "Prix", "", "Produit le + cher"],
+        ["2", "Stylo", "1.50€", "", "❓"],
+        ["3", "Cahier", "3.20€", "", ""],
+        ["4", "Cartable", "45.00€", "", ""],
+        ["5", "Règle", "2.10€", "", ""],
+      ],
+      target: [1, 5]
+    },
+    options: [
+      '=INDEX(A2:A5,MATCH(MAX(B2:B5),B2:B5,0))',
+      '=VLOOKUP(MAX(B2:B5),A2:B5,1,0)',
+      '=INDEX(B2:B5,MATCH(MAX(A2:A5),A2:A5,0))',
+      '=MATCH(MAX(B2:B5),B2:B5,0)'
+    ],
+    answer: '=INDEX(A2:A5,MATCH(MAX(B2:B5),B2:B5,0))',
+    check: (v) => v === '=INDEX(A2:A5,MATCH(MAX(B2:B5),B2:B5,0))'
+  },
+
+  {
+    id: 11, level: "avance", type: "formula",
+    name: "AVERAGEIF",
+    description: "Calcule la moyenne des ventes uniquement pour les vendeurs du département \"Vente\" (colonne B), les montants sont en colonne C.\nFormule en C8 ?",
+    hint: "AVERAGEIF(plage_critère, critère, plage_moyenne) — même logique que SUMIF mais pour la moyenne.",
+    table: {
+      headers: ["", "A", "B", "C"],
+      rows: [
+        ["1", "Nom", "Département", "Ventes (€)"],
+        ["2", "Alice", "Vente", "4 200"],
+        ["3", "Bob", "Marketing", "2 100"],
+        ["4", "Clara", "Vente", "5 800"],
+        ["5", "David", "Support", "1 500"],
+        ["6", "Eva", "Vente", "3 900"],
+        ["7", "", "", ""],
+        ["8", "Moy. Vente", "", "❓"],
+      ],
+      target: [7, 3]
+    },
+    check: (v) => norm(v, ['=AVERAGEIF(B2:B6,"Vente",C2:C6)', '=MOYENNE.SI(B2:B6,"Vente",C2:C6)'])
+  },
+
+  // ── EXPERT ────────────────────────────────────────────────
+  {
+    id: 12, level: "expert", type: "mcq",
+    name: "XLOOKUP (moderne)",
+    description: "Tu veux chercher \"Clara\" dans la colonne A et retourner son salaire en colonne C. Quelle est la syntaxe XLOOKUP correcte ?",
+    hint: "XLOOKUP(valeur, plage_recherche, plage_résultat) est plus simple et puissant que VLOOKUP.",
+    table: {
+      headers: ["", "A", "B", "C"],
+      rows: [
+        ["1", "Prénom", "Poste", "Salaire"],
+        ["2", "Alice", "Dev", "3 200€"],
+        ["3", "Bob", "Designer", "2 800€"],
+        ["4", "Clara", "Manager", "4 500€"],
+        ["5", "David", "Dev", "3 600€"],
+      ]
+    },
+    options: [
+      '=XLOOKUP("Clara",A2:A5,C2:C5)',
+      '=XLOOKUP(A2:A5,"Clara",C2:C5)',
+      '=XLOOKUP("Clara",A2:C5,3)',
+      '=VLOOKUP("Clara",A2:C5,3,0)'
+    ],
+    answer: '=XLOOKUP("Clara",A2:A5,C2:C5)',
+    check: (v) => v === '=XLOOKUP("Clara",A2:A5,C2:C5)'
+  },
+
+  {
+    id: 13, level: "expert", type: "formula",
+    name: "Formule matricielle SUMPRODUCT",
+    description: "Calcule le chiffre d'affaires total en multipliant la quantité (B) par le prix unitaire (C) pour chaque ligne, puis en faisant la somme.\nFormule en D7 sans utiliser de colonne intermédiaire ?",
+    hint: "SUMPRODUCT multiplie deux plages élément par élément, puis additionne le tout : =SUMPRODUCT(B2:B6, C2:C6)",
+    table: {
+      headers: ["", "A", "B", "C", "D"],
+      rows: [
+        ["1", "Produit", "Qté", "Prix unit.", "CA"],
+        ["2", "Stylo", "100", "1.50€", ""],
+        ["3", "Cahier", "50", "3.20€", ""],
+        ["4", "Agenda", "30", "8.00€", ""],
+        ["5", "Classeur", "80", "4.50€", ""],
+        ["6", "Crayon", "200", "0.80€", ""],
+        ["7", "TOTAL CA", "", "", "❓"],
+      ],
+      target: [6, 4]
+    },
+    check: (v) => norm(v, ['=SUMPRODUCT(B2:B6,C2:C6)', '=SOMMEPROD(B2:B6,C2:C6)', '=SUMPRODUCT(B2:B6*C2:C6)'])
+  },
+
+  {
+    id: 14, level: "expert", type: "mcq",
+    name: "Tableau croisé dynamique — Concept",
+    description: "Tu as 10 000 lignes de données de ventes (Date, Région, Vendeur, Montant). Tu veux voir le total des ventes par région et par mois en 10 secondes. Quelle est la meilleure approche ?",
+    hint: "Les tableaux croisés dynamiques (TCD / Pivot Tables) sont faits pour résumer de grandes quantités de données sans formules.",
+    table: {
+      headers: ["", "A", "B", "C", "D"],
+      rows: [
+        ["1", "Date", "Région", "Vendeur", "Montant"],
+        ["2", "01/01/2024", "Nord", "Alice", "1 200€"],
+        ["3", "02/01/2024", "Sud", "Bob", "980€"],
+        ["4", "...", "...", "...", "..."],
+        ["5", "(10 000 lignes)", "", "", ""],
+      ]
+    },
+    options: [
+      'Insérer un Tableau Croisé Dynamique (TCD)',
+      'Écrire des SUMIF pour chaque combinaison',
+      'Trier manuellement par région puis additionner',
+      'Utiliser VLOOKUP sur chaque ligne'
+    ],
+    answer: 'Insérer un Tableau Croisé Dynamique (TCD)',
+    check: (v) => v === 'Insérer un Tableau Croisé Dynamique (TCD)'
+  },
+];
+
+function norm(val, accepted) {
+  const clean = val.trim().toUpperCase().replace(/\s/g, '');
+  return accepted.some(a => a.toUpperCase().replace(/\s/g, '') === clean);
+}
+
+let current = 0;
+let done = new Set(JSON.parse(localStorage.getItem('excel_done') || '[]'));
+let hintVisible = false;
+let selectedMCQ = null;
+
+function saveDone() { localStorage.setItem('excel_done', JSON.stringify([...done])); }
+
+function buildSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  sidebar.innerHTML = `<div class="sidebar-title">Exercices (${done.size}/${exercises.length})</div>`;
+  exercises.forEach((ex, i) => {
+    const div = document.createElement('div');
+    div.className = 'exercise-item' + (i === current ? ' active' : '') + (done.has(ex.id) ? ' done' : '');
+    div.innerHTML = `
+      <div class="ex-icon">${done.has(ex.id) ? '✓' : ex.id}</div>
+      <div class="ex-info">
+        <div class="ex-name">${ex.name}</div>
+        <div class="ex-level"><span class="level-badge badge-${ex.level}">${{debutant:'Débutant',intermediaire:'Intermédiaire',avance:'Avancé',expert:'Expert'}[ex.level]}</span></div>
+      </div>`;
+    div.onclick = () => { current = i; load(); };
+    sidebar.appendChild(div);
+  });
+}
+
+function renderTable(table) {
+  if (!table) return '';
+  let html = '<table class="spreadsheet"><thead><tr>';
+  table.headers.forEach(h => html += `<th>${h}</th>`);
+  html += '</tr></thead><tbody>';
+  table.rows.forEach((row, ri) => {
+    html += '<tr>';
+    row.forEach((cell, ci) => {
+      const isTarget = table.target && table.target[0] === ri && table.target[1] === ci;
+      const isHighlight = table.highlight && table.highlight.includes(ri) && ci > 0;
+      const isRowNum = ci === 0;
+      let cls = isTarget ? 'target' : isHighlight ? 'highlight' : isRowNum ? 'row-num' : (ci === 1 && ri > 0 ? 'label-col' : '');
+      html += `<td class="${cls}">${cell}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  return html;
+}
+
+function renderInput(ex) {
+  if (ex.type === 'formula') {
+    return `
+      <div class="answer-zone">
+        <div class="answer-label">📝 Écris ta formule ci-dessous :</div>
+        <div class="formula-input-row">
+          <div class="formula-prefix">fx</div>
+          <input id="formula-input" type="text" placeholder="=..." autocomplete="off" spellcheck="false"/>
+        </div>
+      </div>`;
+  } else {
+    const opts = ex.options.map(o =>
+      `<button class="mcq-btn" data-val="${o}">${o}</button>`
+    ).join('');
+    return `<div class="mcq-zone"><div class="answer-label">🎯 Choisis la bonne réponse :</div><div class="mcq-options">${opts}</div></div>`;
+  }
+}
+
+function load() {
+  const ex = exercises[current];
+  document.getElementById('ex-title').textContent = `#${ex.id} — ${ex.name}`;
+  document.getElementById('ex-description').textContent = ex.description;
+  document.getElementById('hint-box').textContent = '💡 ' + ex.hint;
+  document.getElementById('hint-box').style.display = 'none';
+  document.getElementById('spreadsheet-container').innerHTML = renderTable(ex.table);
+  document.getElementById('input-zone').innerHTML = renderInput(ex);
+  document.getElementById('status-msg').className = 'status-msg';
+  document.getElementById('status-msg').textContent = '';
+  hintVisible = false;
+  selectedMCQ = null;
+
+  if (ex.type === 'mcq') {
+    document.querySelectorAll('.mcq-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.mcq-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedMCQ = btn.dataset.val;
+      };
+    });
+  } else {
+    const inp = document.getElementById('formula-input');
+    if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
+  }
+
+  buildSidebar();
+  updateProgress();
+}
+
+function check() {
+  const ex = exercises[current];
+  const status = document.getElementById('status-msg');
+  let val = '';
+
+  if (ex.type === 'formula') {
+    val = (document.getElementById('formula-input')?.value || '').trim();
+  } else {
+    val = selectedMCQ || '';
+  }
+
+  if (!val) {
+    status.textContent = '⚠️ Entre une réponse d\'abord !';
+    status.className = 'status-msg fail';
+    return;
+  }
+
+  if (ex.check(val)) {
+    status.textContent = '🎉 Correct, bravo !';
+    status.className = 'status-msg ok';
+    if (ex.type === 'mcq') {
+      document.querySelectorAll('.mcq-btn').forEach(b => {
+        if (b.dataset.val === ex.answer) b.className = 'mcq-btn correct';
+      });
+    }
+    done.add(ex.id);
+    saveDone();
+    buildSidebar();
+    updateProgress();
+    if (current < exercises.length - 1) {
+      setTimeout(() => { current++; load(); }, 1400);
+    } else {
+      setTimeout(() => {
+        status.textContent = '🏆 Tous les exercices complétés !';
+      }, 1400);
+    }
+  } else {
+    status.textContent = '✗ Pas tout à fait, réessaie !';
+    status.className = 'status-msg fail';
+    if (ex.type === 'mcq' && selectedMCQ) {
+      document.querySelectorAll('.mcq-btn').forEach(b => {
+        if (b.dataset.val === selectedMCQ) b.className = 'mcq-btn wrong';
+      });
+    }
+  }
+}
+
+function updateProgress() {
+  document.getElementById('progress-fill').style.width = (done.size / exercises.length * 100) + '%';
+}
+
+document.getElementById('btn-check').onclick = check;
+document.getElementById('btn-hint').onclick = () => {
+  hintVisible = !hintVisible;
+  document.getElementById('hint-box').style.display = hintVisible ? 'block' : 'none';
+};
+document.getElementById('btn-reset').onclick = () => {
+  if (exercises[current].type === 'formula') {
+    const inp = document.getElementById('formula-input');
+    if (inp) inp.value = '';
+  } else {
+    document.querySelectorAll('.mcq-btn').forEach(b => b.className = 'mcq-btn');
+    selectedMCQ = null;
+  }
+  document.getElementById('status-msg').className = 'status-msg';
+};
+
+load();
+</script>
+</body>
+</html>
